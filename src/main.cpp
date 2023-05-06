@@ -2,13 +2,18 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+// https://community.platformio.org/t/solved-asyncelegantota-collect2-exe-error-ld-returned-1-exit-status/28553
 #include <AsyncElegantOTA.h>
-//https://community.platformio.org/t/solved-asyncelegantota-collect2-exe-error-ld-returned-1-exit-status/28553
+#include "FileSystem.h"
 
+void WiFiInit();
+void handleRoot(AsyncWebServerRequest *request);
+void handleToggleLed(AsyncWebServerRequest *request);
+void handleSetRGB(AsyncWebServerRequest *request);
 
 // Replace with your network credentials
-const char *ssid = "//";
-const char *password = "//";
+const char *ssid = "UPC0130180";
+const char *password = "x8wu4ztTwepF";
 
 // Create an instance of the web server
 AsyncWebServer server(80);
@@ -28,6 +33,24 @@ bool led3State = false;
 int redValue = 0;
 int greenValue = 0;
 int blueValue = 0;
+
+void setup()
+{
+  Serial.begin(115200);
+  pinMode(LED1_PIN, OUTPUT);
+  pinMode(LED2_PIN, OUTPUT);
+  pinMode(LED3_PIN, OUTPUT);
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+
+  WiFiInit();
+}
+
+void loop()
+{
+  // Nothing to do here
+}
 
 // Handler function for the root URL
 void handleRoot(AsyncWebServerRequest *request)
@@ -125,16 +148,8 @@ void handleSetRGB(AsyncWebServerRequest *request)
   request->send(200);
 }
 
-void setup()
+void WiFiInit()
 {
-  Serial.begin(115200);
-  pinMode(LED1_PIN, OUTPUT);
-  pinMode(LED2_PIN, OUTPUT);
-  pinMode(LED3_PIN, OUTPUT);
-  pinMode(RED_PIN, OUTPUT);
-  pinMode(GREEN_PIN, OUTPUT);
-  pinMode(BLUE_PIN, OUTPUT);
-
   WiFi.begin(ssid, password);
   Serial.println("Connecting to WiFi...");
   while (WiFi.status() != WL_CONNECTED)
@@ -150,9 +165,4 @@ void setup()
   server.on("/setRGB", HTTP_GET, handleSetRGB);
   AsyncElegantOTA.begin(&server);
   server.begin();
-}
-
-void loop()
-{
-  // Nothing to do here
 }
