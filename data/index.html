@@ -1,26 +1,54 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>ESP WEB SERVER</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-  </head>
-  <body>
-    <div class="topnav">
-      <h1>ESP WEB SERVER</h1>
-    </div>
-    <div class="content">
-      <div class="card-grid">
-        <div class="card">
-          <p class="card-title"><i class="fas fa-lightbulb"></i> GPIO 2</p>
-          <p>
-            <a href="on"><button class="button-on">ON</button></a>
-            <a href="off"><button class="button-off">OFF</button></a>
-          </p>
-          <p class="state">State: %STATE%</p>
-        </div>
+
+<head>
+  <title>ESP WEB SERVER</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
+    integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+</head>
+
+<body>
+  <div class="topnav">
+    <h1>ESP WEB SERVER</h1>
+  </div>
+  <div class="content">
+    <div class="card-grid">
+      <div class="card">
+        <p class="card-title"><i class="fas fa-lightbulb"></i> GPIO 2</p>
+        <p>
+          <!-- <a href="on"><button class="button-on">ON</button></a>
+          <a href="off"><button class="button-off">OFF</button></a> -->
+          <button onclick="buttonClick(1)" id="btnOn" class="button-on">ON2</button>
+          <button onclick="buttonClick(0)" id="btnOff" class="button-off">OFF2</button>
+        </p>
+      </div>
+      <div class="card">
+        <p class="card-title"><i class="fas fa-lightbulb"></i> Sliders</p>
+        <p><label>Red:</label><input type='range' min='0' max='255' onchange='setRGB()' id='red'
+            value='" + String(redValue) + "'></p>
+        <p><label>Green:</label><input type='range' min='0' max='255' onchange='setRGB()' id='green'
+            value='" + String(greenValue) + "'></p>
+        <p><label>Blue:</label><input type='range' min='0' max='255' onchange='setRGB()' id='blue'
+            value='" + String(blueValue) + "'></p>
+      </div>
+      <div class="card">
+        <button onclick="getReadings()">Get Data</button>
+        <p>Info 1: <label id="info1"></label></p>
+        <p>Info 2: <label id="info2"></label></p>
+        <p>Info 3: <label id="info3"></label></p>
+      </div>
+      <div class="card">
+        <button onclick="buttonClick(2)" id="btnOn2" class="button-on">ON3</button>
+        <button onclick="buttonClick(3)" id="btnOff2" class="button-off">OFF3</button>
+        <p>Info 1: <label id="info21"></label></p>
+        <p>Info 2: <label id="info22"></label></p>
+        <p>Info 3: <label id="info23"></label></p>
       </div>
     </div>
-  </body>
+  </div>
+  <script src="index.js"></script>
+</body>
+
 </html>

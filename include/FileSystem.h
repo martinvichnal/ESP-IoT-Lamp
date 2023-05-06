@@ -12,7 +12,6 @@ void initSPIFFS();
 String readFile(fs::FS &fs, const char *path);
 void writeFile(fs::FS &fs, const char *path, const char *message);
 
-const int faszomatEbbe = 1;
 // File paths for SPIFFS
 extern char* ssidPath;
 extern char* passPath;

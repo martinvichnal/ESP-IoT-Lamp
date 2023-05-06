@@ -11,10 +11,11 @@ void WiFiInit();
 void handleRoot(AsyncWebServerRequest *request);
 void handleToggleLed(AsyncWebServerRequest *request);
 void handleSetRGB(AsyncWebServerRequest *request);
+void handleBtnState(AsyncWebServerRequest *request);
 
 // Replace with your network credentials
-const char *ssid = "--";
-const char *password = "--";
+const char *ssid = "UPC0130180";
+const char *password = "x8wu4ztTwepF";
 
 // Create an instance of the web server
 AsyncWebServer server(80);
@@ -22,6 +23,7 @@ AsyncWebServer server(80);
 AsyncEventSource events("/events");
 
 // Define pins for the LEDs
+const int ledPin = 2;
 const int LED1_PIN = 12;
 const int LED2_PIN = 14;
 const int LED3_PIN = 27;
@@ -38,6 +40,7 @@ int greenValue = 0;
 int blueValue = 0;
 
 JSONVar readings;
+JSONVar ledStates;
 
 String getInfo()
 {
@@ -64,17 +67,21 @@ void setup()
 int i = 1;
 unsigned long lastTime = 0;
 unsigned long timerDelay = 10000;
+bool toggle = false;
 
 void loop()
 {
-  if ((millis() - lastTime) > timerDelay)
+  if (toggle)
   {
-    // Send Events to the client with the Sensor Readings Every 10 seconds
-    events.send("ping", NULL, millis());
-    events.send(getInfo().c_str(), "new_readings", millis());
-    lastTime = millis();
+    if ((millis() - lastTime) > timerDelay)
+    {
+      // Send Events to the client with the Sensor Readings Every 10 seconds
+      events.send("ping", NULL, millis());
+      events.send(getInfo().c_str(), "new_readings", millis());
+      lastTime = millis();
+    }
   }
-  if (i > 24)
+  if (i > 2400)
   {
     i = 1;
   }
@@ -89,6 +96,7 @@ void loop()
 
 void WiFiInit()
 {
+  // Connecting to WiFi and setting local ip
   WiFi.begin(ssid, password);
   Serial.println("Connecting to WiFi...");
   while (WiFi.status() != WL_CONNECTED)
@@ -99,17 +107,43 @@ void WiFiInit()
   Serial.print("WiFi connected. IP address: ");
   Serial.println(WiFi.localIP());
 
-  // server.on("/", HTTP_GET, handleRoot);
-  // server.on("/toggleLed", HTTP_GET, handleToggleLed);
-  // server.on("/setRGB", HTTP_GET, handleSetRGB);
+  //---------------------------------------------------------------------------
+  // Setting up the sites:
 
-  // Route for root / web page
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/JSONTest.html", "text/html"); });
+  // Setting main Index page from SPIFFS
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/index.html", "text/html"); });
   server.serveStatic("/", SPIFFS, "/");
 
-  // Request for the latest sensor readings
-  server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request){
+  // Getting RGB values from client:
+  server.on("/setRGB", HTTP_GET, handleSetRGB);
+
+  // Getting button states values from client:
+  server.on("/setBtn", HTTP_GET, handleBtnState);
+
+  // Setting the led state:
+  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    // Setting the led HIGH
+    digitalWrite(ledPin, HIGH);
+    Serial.println("Turning ON the leds");
+    request->send(SPIFFS, "/index.html", "text/html"); });
+  // Setting the led state:
+  server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    // Setting the led LOW
+    digitalWrite(ledPin, LOW);
+    Serial.println("Turning Off the leds");
+    request->send(SPIFFS, "/index.html", "text/html"); });
+
+  // Setting site for JSON Testing page from SPIFFS
+  server.on("/json", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/JSONTest.html", "text/html"); });
+  server.serveStatic("/", SPIFFS, "/");
+
+  // Request for JSON
+  server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
     String json = getInfo();
     request->send(200, "application/json", json);
     json = String(); });
@@ -125,103 +159,47 @@ void WiFiInit()
     client->send("hello!", NULL, millis(), 10000); });
   server.addHandler(&events);
 
-  AsyncElegantOTA.begin(&server); // Starting OTA server for distant firmware updates
-
+  // Starting OTA server for distant firmware and SPIFFS update
+  AsyncElegantOTA.begin(&server);
   server.begin();
 }
 
-// // Handler function for the root URL
-// void handleRoot(AsyncWebServerRequest *request)
-// {
-//   Serial.println("Received request for /");
-//   String html = "";
-//   html += "<html><head><title>LED Control</title></head><body>";
-//   html += "<h1>LED Control</h1>";
-//   html += "<p><label>LED 1:</label><input type='checkbox' onchange='toggleLed(1)'";
-//   if (led1State)
-//   {
-//     html += " checked";
-//   }
-//   html += "></p>";
-//   html += "<p><label>LED 2:</label><input type='checkbox' onchange='toggleLed(2)'";
-//   if (led2State)
-//   {
-//     html += " checked";
-//   }
-//   html += "></p>";
-//   html += "<p><label>LED 3:</label><input type='checkbox' onchange='toggleLed(3)'";
-//   if (led3State)
-//   {
-//     html += " checked";
-//   }
-//   html += "></p>";
-//   html += "<p><label>Red:</label><input type='range' min='0' max='255' onchange='setRGB()' id='red' value='" + String(redValue) + "'></p>";
-//   html += "<p><label>Green:</label><input type='range' min='0' max='255' onchange='setRGB()' id='green' value='" + String(greenValue) + "'></p>";
-//   html += "<p><label>Blue:</label><input type='range' min='0' max='255' onchange='setRGB()' id='blue' value='" + String(blueValue) + "'></p>";
-//   html += "<script>";
-//   html += "function toggleLed(led) {";
-//   html += "var xhttp = new XMLHttpRequest();";
-//   html += "xhttp.open('GET', '/toggleLed?led=' + led, true);";
-//   html += "xhttp.send();";
-//   html += "}";
-//   html += "function setRGB() {";
-//   html += "var redValue = document.getElementById('red').value;";
-//   html += "var greenValue = document.getElementById('green').value;";
-//   html += "var blueValue = document.getElementById('blue').value;";
-//   html += "var xhttp = new XMLHttpRequest();";
-//   html += "xhttp.open('GET', '/setRGB?red=' + redValue + '&green=' + greenValue + '&blue=' + blueValue, true);";
-//   html += "xhttp.send();";
-//   html += "}";
-//   html += "</script>";
-//   html += "</body></html>";
-//   request->send(200, "text/html", html);
-// }
+// Handler function for setting the RGB color
+void handleSetRGB(AsyncWebServerRequest *request)
+{
+  String redStr = request->getParam("red")->value();
+  String greenStr = request->getParam("green")->value();
+  String blueStr = request->getParam("blue")->value();
+  redValue = redStr.toInt();
+  greenValue = greenStr.toInt();
+  blueValue = blueStr.toInt();
+  analogWrite(RED_PIN, redValue);
+  analogWrite(GREEN_PIN, greenValue);
+  analogWrite(BLUE_PIN, blueValue);
+  Serial.print("Set RGB: (");
+  Serial.print(redValue);
+  Serial.print(", ");
+  Serial.print(greenValue);
+  Serial.print(", ");
+  Serial.print(blueValue);
+  Serial.println(")");
+  request->send(200);
+}
 
-// // Handler function for the toggle LED URLs
-// void handleToggleLed(AsyncWebServerRequest *request)
-// {
-//   String ledStr = request->getParam("led")->value();
-//   int led = ledStr.toInt();
-//   Serial.print("Toggle LED ");
-//   Serial.println(led);
-//   switch (led)
-//   {
-//   case 1:
-//     led1State = !led1State;
-//     digitalWrite(LED1_PIN, led1State ? HIGH : LOW);
-//     break;
-//   case 2:
-//     led2State = !led2State;
-//     digitalWrite(LED2_PIN, led2State ? HIGH : LOW);
-//     break;
-//   case 3:
-//     led3State = !led3State;
-//     digitalWrite(LED3_PIN, led3State ? HIGH : LOW);
-//     break;
-//   default:
-//     break;
-//   }
-//   request->send(200);
-// }
+void handleBtnState(AsyncWebServerRequest *request)
+{
+  String btnStr = request->getParam("state")->value();
+  int btnState = btnStr.toInt();
 
-// // Handler function for setting the RGB color
-// void handleSetRGB(AsyncWebServerRequest *request)
-// {
-//   String redStr = request->getParam("red")->value();
-//   String greenStr = request->getParam("green")->value();
-//   String blueStr = request->getParam("blue")->value();
-//   redValue = redStr.toInt();
-//   greenValue = greenStr.toInt();
-//   blueValue = blueStr.toInt();
-//   analogWrite(RED_PIN, redValue);
-//   analogWrite(GREEN_PIN, greenValue);
-//   analogWrite(BLUE_PIN, blueValue);
-//   Serial.print("Set RGB: (");
-//   Serial.print(redValue);
-//   Serial.print(", ");
-//   Serial.print(greenValue);
-//   Serial.print(", ");
-//   Serial.print(blueValue);
-//   Serial.println(")");
-//   request->send(200);
-// }
+  if (btnState == 2)
+  {
+    toggle = true;
+  }
+  else if (btnState == 3)
+  {
+    toggle = false;
+  }
+
+  Serial.println(btnState);
+  request->send(200);
+}

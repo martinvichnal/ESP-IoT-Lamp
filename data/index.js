@@ -1,3 +1,20 @@
+function setRGB() {
+    var redValue = document.getElementById('red').value;
+    var greenValue = document.getElementById('green').value;
+    var blueValue = document.getElementById('blue').value;
+    var xhttp = new XMLHttpRequest();
+    xhttp.open('GET', '/setRGB?red=' + redValue + '&green=' + greenValue + '&blue=' + blueValue, true);
+    xhttp.send();
+}
+
+function buttonClick(state) {
+    // var btn1 = document.getElementById("btnOn");
+    // var btn2 = document.getElementById("btnOff");
+    var xhttp = new XMLHttpRequest();
+    xhttp.open('GET', '/setBtn?state=' + state, true);
+    xhttp.send();
+}
+
 // Get current sensor readings when the page loads
 window.addEventListener('load', getReadings);
 
@@ -8,12 +25,13 @@ function getReadings() {
         if (this.readyState == 4 && this.status == 200) {
             var myObj = JSON.parse(this.responseText);
             // CONSOLING THE INFOS
-            // document.getElementById("info1").innerHTML.text = myObj.info1;
-            // document.getElementById("info2").innerHTML.text = myObj.info2;
-            // document.getElementById("info3").innerHTML.text = myObj.info3;
-            console.log(myObj.info1);
-            console.log(myObj.info2);
-            console.log(myObj.info3);
+            document.getElementById("info1").innerHTML = myObj.info1;
+            document.getElementById("info2").innerHTML = myObj.info2;
+            document.getElementById("info3").innerHTML = myObj.info3;
+            // console.log(myObj.info1);
+            // console.log(myObj.info2);
+            // console.log(myObj.info3);
+            console.log(document.getElementById("info2").text);
             console.log("getReadings()");
             console.log(myObj);
         }
@@ -44,5 +62,8 @@ if (!!window.EventSource) {
         var myObj = JSON.parse(e.data);
         console.log("Event Listener");
         console.log(myObj);
+        document.getElementById("info21").innerHTML = myObj.info1;
+        document.getElementById("info22").innerHTML = myObj.info2;
+        document.getElementById("info23").innerHTML = myObj.info3;
     }, false);
 }
