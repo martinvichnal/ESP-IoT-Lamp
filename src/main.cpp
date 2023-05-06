@@ -6,6 +6,7 @@
 #include <AsyncElegantOTA.h>
 #include <Arduino_JSON.h>
 #include "FileSystem.h"
+#include "ESPAsyncWiFiManager.h"
 
 void WiFiInit();
 void handleRoot(AsyncWebServerRequest *request);
@@ -96,17 +97,19 @@ void loop()
 
 void WiFiInit()
 {
-  // Connecting to WiFi and setting local ip
-  WiFi.begin(ssid, password);
-  Serial.println("Connecting to WiFi...");
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.print("WiFi connected. IP address: ");
-  Serial.println(WiFi.localIP());
-
+  // // Connecting to WiFi and setting local ip
+  // WiFi.begin(ssid, password);
+  // Serial.println("Connecting to WiFi...");
+  // while (WiFi.status() != WL_CONNECTED)
+  // {
+  //   delay(1000);
+  //   Serial.println("Connecting to WiFi...");
+  // }
+  // Serial.print("WiFi connected. IP address: ");
+  // Serial.println(WiFi.localIP());
+  DNSServer dns;
+  AsyncWiFiManager wifiManager(&server,&dns);
+  wifiManager.autoConnect("ESP");
   //---------------------------------------------------------------------------
   // Setting up the sites:
 
