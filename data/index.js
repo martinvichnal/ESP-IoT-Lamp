@@ -1,3 +1,52 @@
+var gateway = `ws://${window.location.hostname}/ws`;
+var websocket;
+
+// ----------------------------------------------------------------------------
+// Initialization
+// ----------------------------------------------------------------------------
+
+window.addEventListener('load', onLoad);
+
+function onLoad(event) {
+    initWebSocket();
+}
+
+// ----------------------------------------------------------------------------
+// WebSocket handling
+// ----------------------------------------------------------------------------
+
+function initWebSocket() {
+    console.log('Trying to open a WebSocket connection...');
+    websocket = new WebSocket(gateway);
+    websocket.onopen = onOpen;
+    websocket.onclose = onClose;
+    websocket.onmessage = onMessage;
+}
+
+function onOpen(event) {
+    console.log('Connection opened');
+}
+
+function onClose(event) {
+    console.log('Connection closed');
+    setTimeout(initWebSocket, 2000);
+}
+
+function onMessage(event) {
+    let data = JSON.parse(event.data);
+    console.log(data);
+    console.log(event);
+    document.getElementById('state').innerHTML = data.state;
+}
+
+function toggle() {
+    console.log("Sending 'toggle' with websocket");
+    // websocket.send('toggle');
+    websocket.send(JSON.stringify({'action':'toggle'}));
+}
+
+
+
 function setRGB() {
     var redValue = document.getElementById('red').value;
     var greenValue = document.getElementById('green').value;
@@ -13,57 +62,4 @@ function buttonClick(state) {
     var xhttp = new XMLHttpRequest();
     xhttp.open('GET', '/setBtn?state=' + state, true);
     xhttp.send();
-}
-
-// Get current sensor readings when the page loads
-window.addEventListener('load', getReadings);
-
-// Function to get current readings on the webpage when it loads for the first time
-function getReadings() {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            var myObj = JSON.parse(this.responseText);
-            // CONSOLING THE INFOS
-            document.getElementById("info1").innerHTML = myObj.info1;
-            document.getElementById("info2").innerHTML = myObj.info2;
-            document.getElementById("info3").innerHTML = myObj.info3;
-            // console.log(myObj.info1);
-            // console.log(myObj.info2);
-            // console.log(myObj.info3);
-            console.log(document.getElementById("info2").text);
-            console.log("getReadings()");
-            console.log(myObj);
-        }
-    };
-    xhr.open("GET", "/readings", true);
-    xhr.send();
-}
-
-if (!!window.EventSource) {
-    var source = new EventSource('/events');
-
-    source.addEventListener('open', function (e) {
-        console.log("Events Connected");
-    }, false);
-
-    source.addEventListener('error', function (e) {
-        if (e.target.readyState != EventSource.OPEN) {
-            console.log("Events Disconnected");
-        }
-    }, false);
-
-    source.addEventListener('message', function (e) {
-        console.log("message", e.data);
-    }, false);
-
-    source.addEventListener('new_readings', function (e) {
-        console.log("new_readings", e.data);
-        var myObj = JSON.parse(e.data);
-        console.log("Event Listener");
-        console.log(myObj);
-        document.getElementById("info21").innerHTML = myObj.info1;
-        document.getElementById("info22").innerHTML = myObj.info2;
-        document.getElementById("info23").innerHTML = myObj.info3;
-    }, false);
 }

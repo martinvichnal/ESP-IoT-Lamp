@@ -4,24 +4,42 @@
 #include <ESPAsyncWebServer.h>
 // https://community.platformio.org/t/solved-asyncelegantota-collect2-exe-error-ld-returned-1-exit-status/28553
 #include <AsyncElegantOTA.h>
-#include <Arduino_JSON.h>
+// #include <Arduino_JSON.h>
+// https://github.com/arduino-libraries/Arduino_JSON
+#include <ArduinoJson.h>
 #include "FileSystem.h"
-#include "ESPAsyncWiFiManager.h"
 
-void WiFiInit();
+void initWiFi();
+void initWebServer();
+void initWebSocket();
+
 void handleRoot(AsyncWebServerRequest *request);
 void handleToggleLed(AsyncWebServerRequest *request);
 void handleSetRGB(AsyncWebServerRequest *request);
 void handleBtnState(AsyncWebServerRequest *request);
 
-// Replace with your network credentials
-const char *ssid = "UPC0130180";
-const char *password = "x8wu4ztTwepF";
+void onEvent(AsyncWebSocket *server,       //
+             AsyncWebSocketClient *client, //
+             AwsEventType type,            // the signature of this function is defined
+             void *arg,                    // by the `AwsEventHandler` interface
+             uint8_t *data,                //
+             size_t len);
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
+void notifyClients();
+
+TaskHandle_t Core0; // will be used for wifi
+void initCores();
+void core0Func(void *);
+
+#define HTTP_PORT 80
 
 // Create an instance of the web server
-AsyncWebServer server(80);
-// Create an Event Source on /events
-AsyncEventSource events("/events");
+AsyncWebServer server(HTTP_PORT);
+AsyncWebSocket ws("/ws");
+
+// Replace with your network credentials
+const char *ssid = "//";
+const char *password = "//";
 
 // Define pins for the LEDs
 const int ledPin = 2;
@@ -40,48 +58,41 @@ int redValue = 0;
 int greenValue = 0;
 int blueValue = 0;
 
-JSONVar readings;
-JSONVar ledStates;
 
-String getInfo()
-{
-  readings["info1"] = String(redValue);
-  readings["info2"] = String(greenValue);
-  readings["info3"] = String(blueValue);
-
-  String jsonString = JSON.stringify(readings);
-  return jsonString;
-}
-
+//==========================================================================================//
+//           _____    ______  ______   __  __    ____
+//          / ___/   / ____/ /_  __/  / / / /   / __ \
+//          \__ \   / __/     / /    / / / /   / /_/ /
+//         ___/ /  / /___    / /    / /_/ /   / ____/
+//        /____/  /_____/   /_/     \____/   /_/
+//==========================================================================================//
 void setup()
 {
   Serial.begin(115200);
+  //    *!! when core 0 is running empty it crashes every time...
+  initCores();
   pinMode(LED1_PIN, OUTPUT);
   pinMode(LED2_PIN, OUTPUT);
   pinMode(LED3_PIN, OUTPUT);
   pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   pinMode(BLUE_PIN, OUTPUT);
-  initSPIFFS();
-  WiFiInit();
 }
+//******************************************************************************************//
+//==========================================================================================//
+
+//==========================================================================================//
+//     __    ____    ____     ____
+//    / /   / __ \  / __ \   / __ \
+//   / /   / / / / / / / /  / /_/ /
+//  / /___/ /_/ / / /_/ /  / ____/
+// /_____/\____/  \____/  /_/
+//==========================================================================================//
+
 int i = 1;
-unsigned long lastTime = 0;
-unsigned long timerDelay = 10000;
-bool toggle = false;
 
 void loop()
 {
-  if (toggle)
-  {
-    if ((millis() - lastTime) > timerDelay)
-    {
-      // Send Events to the client with the Sensor Readings Every 10 seconds
-      events.send("ping", NULL, millis());
-      events.send(getInfo().c_str(), "new_readings", millis());
-      lastTime = millis();
-    }
-  }
   if (i > 2400)
   {
     i = 1;
@@ -94,77 +105,133 @@ void loop()
   }
   i++;
 }
+//******************************************************************************************//
+//==========================================================================================//
 
-void WiFiInit()
+//==========================================================================================//
+//   _____  ____    ___    ____       ___         __   ____   ____    ___
+//  / ___/ / __ \  / _ \  / __/ ____ / _ \       / /  / __ \ / __ \  / _ \
+// / /__  / /_/ / / , _/ / _/  /___// // /      / /__/ /_/ // /_/ / / ___/
+// \___/  \____/ /_/|_| /___/       \___/      /____/\____/ \____/ /_/
+//==========================================================================================//
+int dummy = 0;
+void core0Func(void *)
 {
-  // // Connecting to WiFi and setting local ip
-  // WiFi.begin(ssid, password);
-  // Serial.println("Connecting to WiFi...");
-  // while (WiFi.status() != WL_CONNECTED)
-  // {
-  //   delay(1000);
-  //   Serial.println("Connecting to WiFi...");
-  // }
-  // Serial.print("WiFi connected. IP address: ");
-  // Serial.println(WiFi.localIP());
-  DNSServer dns;
-  AsyncWiFiManager wifiManager(&server,&dns);
-  wifiManager.autoConnect("ESP");
-  //---------------------------------------------------------------------------
-  // Setting up the sites:
+  initSPIFFS(); // Initializing SPIFFS
+  initWiFi();   // Initializing WiF
+  initWebServer();
+  initWebSocket();
 
-  // Setting main Index page from SPIFFS
+  // Inf. loop for core fucntions:
+  while (true)
+  {
+    ws.cleanupClients();
+    delay(50);
+  }
+}
+//******************************************************************************************//
+//==========================================================================================//
+
+void initWiFi()
+{
+  // Connecting to WiFi and setting local ip
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  Serial.print("WiFi connected. IP address: ");
+  Serial.printf(" %s\n", WiFi.localIP().toString().c_str());
+}
+
+void initWebServer()
+{
+  //  Setting up sites:
+  //    * "/" root page - index.html (from SPIFFS)
+  //    * "/setRGB" requesting RGB walues from sliders - connected with handleSetRGB()
+  //    * "/setBtn" requesting Button state values (0, 1, 2, 3) - connected with handleBtnState()
+  //    * "/setRGB" requesting RGB walues from sliders - connected with handleSetRGB()
+  //    * "/readings" requesting JSON object
+
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(SPIFFS, "/index.html", "text/html"); });
-  server.serveStatic("/", SPIFFS, "/");
-
-  // Getting RGB values from client:
   server.on("/setRGB", HTTP_GET, handleSetRGB);
-
-  // Getting button states values from client:
   server.on("/setBtn", HTTP_GET, handleBtnState);
 
-  // Setting the led state:
-  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    // Setting the led HIGH
-    digitalWrite(ledPin, HIGH);
-    Serial.println("Turning ON the leds");
-    request->send(SPIFFS, "/index.html", "text/html"); });
-  // Setting the led state:
-  server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    // Setting the led LOW
-    digitalWrite(ledPin, LOW);
-    Serial.println("Turning Off the leds");
-    request->send(SPIFFS, "/index.html", "text/html"); });
-
-  // Setting site for JSON Testing page from SPIFFS
-  server.on("/json", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(SPIFFS, "/JSONTest.html", "text/html"); });
   server.serveStatic("/", SPIFFS, "/");
-
-  // Request for JSON
-  server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    String json = getInfo();
-    request->send(200, "application/json", json);
-    json = String(); });
-
-  events.onConnect([](AsyncEventSourceClient *client)
-                   {
-    if(client->lastId())
-    {
-      Serial.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
-    }
-    // send event with message "hello!", id current millis
-    // and set reconnect delay to 1 second
-    client->send("hello!", NULL, millis(), 10000); });
-  server.addHandler(&events);
-
-  // Starting OTA server for distant firmware and SPIFFS update
-  AsyncElegantOTA.begin(&server);
+  AsyncElegantOTA.begin(&server); // Starting OTA server for distant firmware and SPIFFS update
   server.begin();
+}
+
+void initWebSocket()
+{
+  ws.onEvent(onEvent);
+  server.addHandler(&ws);
+}
+
+void onEvent(AsyncWebSocket *server,
+             AsyncWebSocketClient *client,
+             AwsEventType type,
+             void *arg,
+             uint8_t *data,
+             size_t len)
+{ //
+
+  switch (type)
+  {
+  case WS_EVT_CONNECT:
+    Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+    break;
+  case WS_EVT_DISCONNECT:
+    Serial.printf("WebSocket client #%u disconnected\n", client->id());
+    break;
+  case WS_EVT_DATA:
+    handleWebSocketMessage(arg, data, len);
+    break;
+  case WS_EVT_PONG:
+  case WS_EVT_ERROR:
+    break;
+  }
+}
+
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
+{
+  AwsFrameInfo *info = (AwsFrameInfo *)arg;
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT)
+  {
+    const uint8_t size = JSON_OBJECT_SIZE(1);
+    StaticJsonDocument<size> json;
+    DeserializationError err = deserializeJson(json, data);
+    if (err)
+    {
+      Serial.print(F("deserializeJson() failed with code "));
+      Serial.println(err.c_str());
+      return;
+    }
+    
+    const char *action= json["action"];
+    if (strcmp(action, "toggle") == 0)
+    {
+      led3State = !led3State;
+      Serial.println(led3State);
+      notifyClients();
+    }
+  }
+}
+
+void notifyClients()
+{
+  const uint8_t size = JSON_OBJECT_SIZE(1);
+  StaticJsonDocument<size> json;
+  json["state"] = led3State;
+
+  char data[17];
+  size_t len = serializeJson(json, data);
+  ws.textAll(data, len);
 }
 
 // Handler function for setting the RGB color
@@ -194,15 +261,20 @@ void handleBtnState(AsyncWebServerRequest *request)
   String btnStr = request->getParam("state")->value();
   int btnState = btnStr.toInt();
 
-  if (btnState == 2)
-  {
-    toggle = true;
-  }
-  else if (btnState == 3)
-  {
-    toggle = false;
-  }
-
   Serial.println(btnState);
   request->send(200);
+}
+
+void initCores()
+{
+  // Initializing Core 0 for WIFI tasks
+  xTaskCreatePinnedToCore(
+      core0Func, /* Task function. */
+      "Core0",   /* name of task. */
+      10000,     /* Stack size of task */
+      NULL,      /* parameter of the task */
+      1,         /* priority of the task */
+      &Core0,    /* Task handle to keep track of created task */
+      0);        /* pin task to core 0 */
+  delay(500);
 }
