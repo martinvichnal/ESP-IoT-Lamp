@@ -16,16 +16,14 @@
   <div class="content">
     <div class="card-grid">
       <div class="card">
-        <p class="card-title"><i class="fas fa-lightbulb"></i> GPIO 2</p>
+        <p class="card-title"><i class="fas fa-lightbulb"></i>State</p>
         <p>
-          <!-- <a href="on"><button class="button-on">ON</button></a>
-          <a href="off"><button class="button-off">OFF</button></a> -->
-          <button onclick="buttonClick(1)" id="btnOn" class="button-on">ON2</button>
-          <button onclick="buttonClick(0)" id="btnOff" class="button-off">OFF2</button>
+          <button onclick="buttonClick(1)" id="btnOn" class="button-on">ON</button>
+          <button onclick="buttonClick(0)" id="btnOff" class="button-off">OFF</button>
         </p>
       </div>
       <div class="card">
-        <p class="card-title"><i class="fas fa-lightbulb"></i> Sliders</p>
+        <p class="card-title"><i class="fas fa-lightbulb"></i>RGB</p>
         <p><label>Red:</label><input type='range' min='0' max='255' onchange='setRGB()' id='red'
             value='" + String(redValue) + "'></p>
         <p><label>Green:</label><input type='range' min='0' max='255' onchange='setRGB()' id='green'
@@ -34,23 +32,11 @@
             value='" + String(blueValue) + "'></p>
       </div>
       <div class="card">
-        <button onclick="getReadings()">Get Data</button>
-        <p>Info 1: <label id="info1"></label></p>
-        <p>Info 2: <label id="info2"></label></p>
-        <p>Info 3: <label id="info3"></label></p>
-      </div>
-      <div class="card">
-        <button onclick="buttonClick(2)" id="btnOn2" class="button-on">ON3</button>
-        <button onclick="buttonClick(3)" id="btnOff2" class="button-off">OFF3</button>
-        <p>Info 1: <label id="info21"></label></p>
-        <p>Info 2: <label id="info22"></label></p>
-        <p>Info 3: <label id="info23"></label></p>
-      </div>
-      <div class="card">
-        <button onclick="toggle()" id="wsBtn" class="button-on">WebSocket Button</button>
+        <button id="sendBtn" class="button-on">SEND</button>
         <p>state: <span id="state">%STATE%</span></p>
         <p>WebSocket Info 1: <label id="WSinfo1"></label></p>
         <p>WebSocket Info 2: <label id="WSinfo2"></label></p>
+        <p>WebSocket Info 3: <label id="WSinfo3"></label></p>
       </div>
     </div>
   </div>
