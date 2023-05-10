@@ -1,48 +1,90 @@
 html {
-  font-family: Arial, Helvetica, sans-serif; 
-  display: inline-block; 
+  font-family: Arial, Helvetica, sans-serif;
+  display: inline-block;
   text-align: center;
 }
 
 h1 {
-  font-size: 1.8rem; 
+  font-size: 1.8rem;
   color: white;
+  text-shadow: 1px 1px 24px #815201;
 }
 
-p { 
+p {
   font-size: 1.4rem;
+  color: #FEFCFB;
 }
 
-.topnav { 
-  overflow: hidden; 
-  background-color: #0A1128;
+label {
+  font-size: 1.2rem;
+  color: #FEFCFB;
 }
 
-body {  
+.topnav {
+  overflow: hidden;
+  background-color: #1f1f1f;
+}
+
+body {
   margin: 0;
+  background-color: #2a2a2a;
 }
 
-.content { 
+.content {
   padding: 5%;
 }
 
-.card-grid { 
-  max-width: 800px; 
-  margin: 0 auto; 
-  display: grid; 
-  grid-gap: 2rem; 
+.card-grid {
+  max-width: 800px;
+  margin: 0 auto;
+  display: grid;
+  grid-gap: 2rem;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
-.card { 
-  background-color: white; 
-  box-shadow: 2px 2px 12px 1px rgba(140,140,140,.5);
+.card-debug {
+  background-color: rgb(80, 80, 80);
+  box-shadow: 1px 1px 12px 1px rgb(30, 0, 99);
+  opacity: 0.2;
 }
 
-.card-title { 
-  font-size: 1.2rem;
+.card {
+  background-color: rgb(80, 80, 80);
+  box-shadow: 1px 1px 12px 1px rgb(30, 0, 99);
+}
+
+.card-title {
+  font-size: 1.6rem;
   font-weight: bold;
-  color: #034078
+  color: #ffffff;
+  text-shadow: 1px 1px 24px #3c0075;
+}
+
+button {
+  border: none;
+  color: #FEFCFB;
+  padding: 15px;
+  text-align: center;
+  font-size: 16px;
+  width: 80px;
+  border-radius: 4px;
+  transition-duration: 0.4s;
+}
+
+.button-on {
+  background-color: #034078;
+}
+
+.button-on:hover {
+  background-color: #9411b1;
+}
+
+.button-off {
+  background-color: #858585;
+}
+
+.button-off:hover {
+  background-color: #252524;
 }
 
 input[type=submit] {
@@ -73,37 +115,3 @@ input[type=text], input[type=number], select {
   border-radius: 4px;
   box-sizing: border-box;
 }
-
-label {
-  font-size: 1.2rem; 
-}
-.value{
-  font-size: 1.2rem;
-  color: #1282A2;  
-}
-.state {
-  font-size: 1.2rem;
-  color: #1282A2;
-}
-button {
-  border: none;
-  color: #FEFCFB;
-  padding: 15px 32px;
-  text-align: center;
-  font-size: 16px;
-  width: 100px;
-  border-radius: 4px;
-  transition-duration: 0.4s;
-}
-.button-on {
-  background-color: #034078;
-}
-.button-on:hover {
-  background-color: #1282A2;
-}
-.button-off {
-  background-color: #858585;
-}
-.button-off:hover {
-  background-color: #252524;
-} 

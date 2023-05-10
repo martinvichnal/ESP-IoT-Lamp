@@ -1,15 +1,6 @@
 var gateway = `ws://${window.location.hostname}/ws`;
 var websocket;
 
-// var state = false;
-// var mode = 0;
-// var brightnessValue = 0;
-// var speedValue = 0;
-// var redValue = 0;
-// var greenValue = 0;
-// var blueValue = 0;
-
-
 const obj = {
     state: 0,
     mode: 0,
@@ -20,10 +11,6 @@ const obj = {
     blueValue: 0,
 }
 
-// ----------------------------------------------------------------------------
-// Initialization
-// ----------------------------------------------------------------------------
-
 window.addEventListener('load', onLoad);
 
 function onLoad(event) {
@@ -31,9 +18,6 @@ function onLoad(event) {
     document.getElementById("sendBtn").addEventListener("click", btnPressed);
 }
 
-// ----------------------------------------------------------------------------
-// WebSocket handling
-// ----------------------------------------------------------------------------
 
 function initWebSocket() {
     console.log('Trying to open a WebSocket connection...');
@@ -64,22 +48,17 @@ function onMessage(event) {
     obj.greenValue = data.greenValue;
     obj.blueValue = data.blueValue;
 
-    document.getElementById('state').innerHTML = obj.state;
-    document.getElementById('WSinfo1').innerHTML = obj.mode;
-    document.getElementById('WSinfo2').innerHTML = obj.brightnessValue;
-    document.getElementById('WSinfo3').innerHTML = obj.speedValue;
+    setDebug();
 }
 
 function sendWebSocket(sendObj) {
-    // websocket.send('toggle');
-    // websocket.send(JSON.stringify({'action':'toggle'}));
     console.log("SENDING THIS:");
     console.log(sendObj);
     websocket.send(JSON.stringify(sendObj));
+    setDebug();
 }
 
-function btnPressed()
-{
+function btnPressed() {
     console.log("Send button was pressed. Sending websockets...");
     sendWebSocket(obj);
 }
@@ -89,13 +68,50 @@ function setRGB() {
     obj.redValue = document.getElementById('red').value;
     obj.greenValue = document.getElementById('green').value;
     obj.blueValue = document.getElementById('blue').value;
+    sendWebSocket(obj);
 }
 
-function buttonClick(state) {
-    obj.state = state;
+function setBrightness() {
+    obj.brightnessValue = document.getElementById('brightness').value;
+    sendWebSocket(obj);
 }
 
+function setSpeed() {
+    obj.speedValue = document.getElementById('speed').value;
+    sendWebSocket(obj);
+}
 
+function setMode(_mode){
+    obj.mode = _mode;
+    sendWebSocket(obj);
+}
+
+function stateBtn() {
+    const btn = document.getElementById('btnState');
+
+    obj.state = !obj.state;
+
+    if (obj.state == true) {
+        btn.className = "button-off"
+        btn.textContent = "OFF"
+    }
+    else {
+        btn.className = "button-on"
+        btn.textContent = "ON"
+    }
+    sendWebSocket(obj);
+}
+
+function setDebug()
+{
+    document.getElementById('debug1').textContent = obj.state;
+    document.getElementById('debug2').textContent = obj.mode;
+    document.getElementById('debug3').textContent = obj.brightnessValue;
+    document.getElementById('debug4').textContent = obj.speedValue;
+    document.getElementById('debug5').textContent = obj.redValue;
+    document.getElementById('debug6').textContent = obj.greenValue;
+    document.getElementById('debug7').textContent = obj.blueValue;
+}
 
 
 // function setRGB() {

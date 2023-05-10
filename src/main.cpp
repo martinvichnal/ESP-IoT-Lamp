@@ -8,6 +8,7 @@
 // https://github.com/arduino-libraries/Arduino_JSON
 #include <ArduinoJson.h>
 #include "FileSystem.h"
+#include <FastLED.h>
 
 //==========================================================================================//
 //*******************************//
@@ -16,6 +17,7 @@
 void initWiFi();
 void initWebServer();
 void initWebSocket();
+void initFastLed();
 
 //*******************************//
 // web page fucntions
@@ -44,7 +46,6 @@ TaskHandle_t Core0; // will be used for wifi
 void initCores();
 void core0Func(void *);
 
-
 //*******************************//
 // WiFi
 //*******************************//
@@ -57,98 +58,172 @@ const char *ssid = "";
 const char *password = "";
 
 //*******************************//
-// Variables
+// Global JSON Variables
 //*******************************//
-bool state = false;
-int mode = 0;
-int brightnessValue = 0;
-int speedValue = 0;
-int redValue = 0;
-int greenValue = 0;
-int blueValue = 0;
+bool state = false;      // 0 or 1
+int mode = 0;            // 0..2
+int brightnessValue = 0; // 0..255
+int speedValue = 40;     // 0..100
+int redValue = 0;        // 0..255
+int greenValue = 0;      // 0..255
+int blueValue = 0;       // 0..255
+
+//*******************************//
+// FastLED and it's variables
+//*******************************//
+#define LED_TYPE WS2812B         // Type of the led
+#define BRIGHTNESS 255           // Starting brightness
+#define COLOR_ORDER GRB          // Color Ordering
+#define LED_PIN 5                // Led DATA output
+const uint8_t kMatrixWidth = 10; // Width of the led arrays
+const uint8_t kMatrixHeight = 4; // Height of the led arrays
+#define NUM_LEDS (kMatrixWidth * kMatrixHeight)
+
+CRGB leds[kMatrixWidth * kMatrixHeight]; // Main led[] array
+CRGB source1[kMatrixWidth * kMatrixHeight];
+CRGB source2[kMatrixWidth * kMatrixHeight]; // leds[] array, later will be used for transition between modes
+
+void changeModeWithBlend(CRGB inScene1[kMatrixWidth * kMatrixHeight], CRGB inScene2[kMatrixWidth * kMatrixHeight], bool modeChanged, int delayTime);
+void runPattern(uint8_t modeActive, CRGB *LEDArray);
+void CustomColor(CRGB *source);
+void ColorsFade(CRGB *source);
+void Rainbow(CRGB *source);
+void nonBlockingDelay(unsigned long duration);
+
+int RainbowDelayTime = 40; // Rainbow() delay time
+uint8_t hue[NUM_LEDS];     // Hue value for Rainbow() effect
+
+int ColorsFadeDelayTime = 40;     // ColorsFade() delay time
+bool changeGreenAndRed = true;    // incrementing green, decrementing red
+bool changeBlueAndGreeen = false; // incrementing blue, decrementing green
+bool changeRedAndBlue = false;    // incrementing red, decrementing blue
+
+int red = 0;
+int green = 0;
+int blue = 0;
+
+int blendAmount = 0;
+bool ModeChanged = false; // This is used for blend effect
+int actualMode = 0;
+int prevMode = 0;
+int newMode = 0;
+
+unsigned long previousMillis = 0;
+unsigned long interval = 200;
+
 //******************************************************************************************//
 //==========================================================================================//
 
-
 //==========================================================================================//
-//    _____ ______________  ______ 
+//    _____ ______________  ______              - Initializing everything
 //   / ___// ____/_  __/ / / / __ \
 //   \__ \/ __/   / / / / / / /_/ /
-//  ___/ / /___  / / / /_/ / ____/ 
-// /____/_____/ /_/  \____/_/      
+//  ___/ / /___  / / / /_/ / ____/
+// /____/_____/ /_/  \____/_/
 //==========================================================================================//
 void setup()
 {
   Serial.begin(115200);
   //    *!! when core 0 is running empty it crashes every time...
-  initCores();
+  // initCores();
+  initSPIFFS(); // Initializing SPIFFS
+  initWiFi();   // Initializing WiF
+  initWebServer();
+  initWebSocket();
+  initFastLed();
 }
 //******************************************************************************************//
 //==========================================================================================//
 
 //==========================================================================================//
-//     __    ____    ____     ____
-//    / /   / __ \  / __ \   / __ \
+//     __    ____    ____     ____          - Loop used for WiFi things
+//    / /   / __ \  / __ \   / __ \           Using Core 1
 //   / /   / / / / / / / /  / /_/ /
 //  / /___/ /_/ / / /_/ /  / ____/
 // /_____/\____/  \____/  /_/
 //==========================================================================================//
 void loop()
 {
+  ws.cleanupClients();
 
+  if (state)
+  {
+    FastLED.setBrightness(brightnessValue);
+    RainbowDelayTime = speedValue;
+    ColorsFadeDelayTime = speedValue;
+
+    // Running the actualMode in source1
+    runPattern(actualMode, source1);
+
+    // If the mode has changed then start running the new mode in source2 then blend the two together
+    // If the blend is done (blendAmount = 255) then change the actual mode to the next one and reset everything
+    // scene1 is always the current mode effects
+    // scene2 is always the new mode effects
+    if (ModeChanged == true)
+    {
+      // Run the new mode in source2
+      runPattern(newMode, source2);
+
+      blend(source2, source1, leds, NUM_LEDS, blendAmount);
+
+      // Increment blend amount until 255 (which is the max and the led is driven with source2)
+      if (blendAmount < 255)
+      {
+        // blendAmount = (blendAmount + 2) * 1.2;
+        blendAmount++;
+      }
+      else
+      {
+        actualMode = newMode;
+
+        ModeChanged = false;
+        blendAmount = 0;
+      }
+      // Serial.print("actualMode: ");
+      // Serial.println(actualMode);
+      // Serial.print("blendAmount: ");
+      // Serial.println(blendAmount);
+      // Serial.print("ModeChanged: ");
+      // Serial.println(ModeChanged);
+      // Serial.println();
+    }
+  }
+  else
+  {
+    FastLED.setBrightness(0);
+  }
+  // delay(50);
+  FastLED.show();
 }
 //******************************************************************************************//
 //==========================================================================================//
 
-
-
 //==========================================================================================//
-//    __________  ____  ______       __    ____  ____  ____ 
-//   / ____/ __ \/ __ \/ ____/      / /   / __ \/ __ \/ __ \
-//  / /   / / / / /_/ / __/        / /   / / / / / / / /_/ /
-// / /___/ /_/ / _, _/ /___       / /___/ /_/ / /_/ / ____/ 
-// \____/\____/_/ |_/_____/      /_____/\____/\____/_/      
+//    __________  ____  ______       __    ____  ____  ____       - Used for driving the
+//   / ____/ __ \/ __ \/ ____/      / /   / __ \/ __ \/ __ \        LEDS with FastLED
+//  / /   / / / / /_/ / __/        / /   / / / / / / / /_/ /        Library
+// / /___/ /_/ / _, _/ /___       / /___/ /_/ / /_/ / ____/         This is Core 0
+// \____/\____/_/ |_/_____/      /_____/\____/\____/_/              (Arduino using core 1)
 //==========================================================================================//
-int dummy = 0;
 void core0Func(void *)
 {
-  initSPIFFS(); // Initializing SPIFFS
-  initWiFi();   // Initializing WiF
-  initWebServer();
-  initWebSocket();
-
+  //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  THIS CANT BE EMPTY BECAUSE IT CRASHES AND REBOOTS IF EMPTY   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // Inf. loop for core fucntions:
   while (true)
   {
-    ws.cleanupClients();
-    // delay(50);
-    // mode = dummy;
-    // brightnessValue = dummy + dummy;
-    // speedValue = dummy * 2;
-    // dummy++;
-    delay(1000);
-    // notifyClients();
-
-    // Serial.print("state:    "); Serial.println(state);
-    // Serial.print("mode:   "); Serial.println(mode);
-    // Serial.print("brightnessValue:    "); Serial.println(brightnessValue);
-    // Serial.print("speedValue:   "); Serial.println(speedValue);
-    // Serial.print("redValue:   "); Serial.println(redValue);
-    // Serial.print("greenValue:   "); Serial.println(greenValue);
-    // Serial.print("blueValue:    "); Serial.println(blueValue);
-    // Serial.println();
+    notifyClients();
+    delay(50);
   }
 }
 //******************************************************************************************//
 //==========================================================================================//
 
-
 //==========================================================================================//
 //     ________  ___   ______________________  _   _______
 //    / ____/ / / / | / / ____/_  __/  _/ __ \/ | / / ___/
 //   / /_  / / / /  |/ / /     / /  / // / / /  |/ /\__ \ 
-//  / __/ / /_/ / /|  / /___  / / _/ // /_/ / /|  /___/ / 
-// /_/    \____/_/ |_/\____/ /_/ /___/\____/_/ |_//____/  
+//  / __/ / /_/ / /|  / /___  / / _/ // /_/ / /|  /___/ /
+// /_/    \____/_/ |_/\____/ /_/ /___/\____/_/ |_//____/
 //==========================================================================================//
 void initWiFi()
 {
@@ -175,6 +250,8 @@ void initWebServer()
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(SPIFFS, "/index.html", "text/html"); });
+  server.on("/wifimanager", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/wifimanager.html", "text/html"); });
   server.on("/setRGB", HTTP_GET, handleSetRGB);
   server.on("/setBtn", HTTP_GET, handleBtnState);
 
@@ -232,27 +309,35 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 
     state = json["state"];
     mode = json["mode"];
+    if (prevMode != mode)
+    {
+      prevMode = mode;
+      newMode = mode;
+      ModeChanged = true;
+      Serial.println("MODE CHANGED");
+    }
+
     brightnessValue = json["brightnessValue"];
     speedValue = json["speedValue"];
     redValue = json["redValue"];
     greenValue = json["greenValue"];
     blueValue = json["blueValue"];
 
-    // int _redValue = json["redValue"];
-    Serial.println(redValue);
-
-    // const char *_state = json["state"];
-    // Serial.println(_state);
-    // if (strcmp(_state, "1") == 0)
-    // {
-    //   state = true;
-    //   Serial.println(state);
-    // }
-    // if (strcmp(_state, "0") == 0)
-    // {
-    //   state = false;
-    //   Serial.println(state);
-    // }
+    // Serial.print("state:    ");
+    // Serial.println(state);
+    // Serial.print("mode:   ");
+    // Serial.println(mode);
+    // Serial.print("brightnessValue:    ");
+    // Serial.println(brightnessValue);
+    // Serial.print("speedValue:   ");
+    // Serial.println(speedValue);
+    // Serial.print("redValue:   ");
+    // Serial.println(redValue);
+    // Serial.print("greenValue:   ");
+    // Serial.println(greenValue);
+    // Serial.print("blueValue:    ");
+    // Serial.println(blueValue);
+    // Serial.println();
   }
   notifyClients();
 }
@@ -318,4 +403,117 @@ void initCores()
       &Core0,    /* Task handle to keep track of created task */
       0);        /* pin task to core 0 */
   delay(500);
+}
+
+void initFastLed()
+{
+  FastLED.addLeds<WS2812B, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
+  FastLED.clear();
+  FastLED.show();
+}
+
+void runPattern(uint8_t modeActive, CRGB *LEDArray)
+{
+  switch (modeActive)
+  {
+  case 0:
+  {
+    if (millis() - previousMillis >= RainbowDelayTime)
+    {
+      previousMillis = millis();
+      Rainbow(LEDArray);
+    }
+    // fill_solid(LEDArray, NUM_LEDS, CRGB(255, 0, 0));
+    break;
+  }
+
+  case 1:
+  {
+    if (millis() - previousMillis >= ColorsFadeDelayTime)
+    {
+      previousMillis = millis();
+      ColorsFade(LEDArray);  
+    }
+    // fill_solid(LEDArray, NUM_LEDS, CRGB(0, 255, 0));
+    break;
+  }
+
+  case 2:
+  {
+    CustomColor(LEDArray);
+    // fill_solid(LEDArray, NUM_LEDS, CRGB(0, 0, 255));
+    break;
+  }
+  }
+}
+
+// Setting the leds to a custom hue value.
+void CustomColor(CRGB *source)
+{
+  fill_solid(source, NUM_LEDS, CRGB(redValue, greenValue, blueValue));
+}
+
+// Fading the colors.
+void ColorsFade(CRGB *source)
+{
+  /////////////////////////////green & red////////////////////////////////
+  if (changeGreenAndRed)
+  {
+    fill_solid(source, NUM_LEDS, CRGB(red, green, blue));
+    green++;
+    red--;
+
+    if ((red <= 0) || (green >= 255))
+    {
+      green = 255;
+      red = 0;
+      changeGreenAndRed = false;
+      changeBlueAndGreeen = true;
+      changeRedAndBlue = false;
+    }
+  }
+
+  ///////////////////////////////blue & green//////////////////////////////
+  if (changeBlueAndGreeen)
+  {
+    fill_solid(source, NUM_LEDS, CRGB(red, green, blue));
+    blue++;
+    green--;
+
+    if ((green <= 0) || (blue >= 255))
+    {
+      blue = 255;
+      green = 0;
+      changeGreenAndRed = false;
+      changeBlueAndGreeen = false;
+      changeRedAndBlue = true;
+    }
+  }
+
+  ////////////////////////////////red & blue/////////////////////////////
+  if (changeRedAndBlue)
+  {
+    fill_solid(source, NUM_LEDS, CRGB(red, green, blue));
+    red++;
+    blue--;
+
+    if ((blue <= 0) || (red >= 255))
+    {
+      red = 255;
+      blue = 0;
+      changeGreenAndRed = true;
+      changeBlueAndGreeen = false;
+      changeRedAndBlue = false;
+    }
+  }
+}
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+// Rainbow effect
+void Rainbow(CRGB *source)
+{
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    source[i] = CHSV(hue[i]++, 255, 255);
+  }
 }

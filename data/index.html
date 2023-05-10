@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>ESP WEB SERVER</title>
+  <title>ESP Smart lamp</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="style.css">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
@@ -11,33 +11,62 @@
 
 <body>
   <div class="topnav">
-    <h1>ESP WEB SERVER</h1>
+    <h1>ESP Smart lamp</h1>
   </div>
   <div class="content">
     <div class="card-grid">
+
+      <!-- Lamp state -->
       <div class="card">
-        <p class="card-title"><i class="fas fa-lightbulb"></i>State</p>
+        <p class="card-title"></i>State</p>
         <p>
-          <button onclick="buttonClick(1)" id="btnOn" class="button-on">ON</button>
-          <button onclick="buttonClick(0)" id="btnOff" class="button-off">OFF</button>
+          <button onclick="stateBtn()" id="btnState" class="button-on">ON</button>
         </p>
       </div>
+
+      <!-- Brightness and speed sliders -->
       <div class="card">
-        <p class="card-title"><i class="fas fa-lightbulb"></i>RGB</p>
-        <p><label>Red:</label><input type='range' min='0' max='255' onchange='setRGB()' id='red'
+        <p class="card-title"></i>Btightness/Speed</p>
+        <p><label>Brightness: </label><input type='range' min='0' max='255' onchange='setBrightness()' id='brightness'
+            value='" + String(brightness) + "'></p>
+        <p><label>Speed: </label><input type='range' min='0' max='100' onchange='setSpeed()' id='speed'
+            value='" + String(speed) + "'></p>
+      </div>
+
+      <!-- Mode menu -->
+      <div class="card">
+        <p class="card-title"></i>Mode</p>
+        <p>
+          <button onclick="setMode(0)" id="btnState" class="button-on">Rainbow</button>
+          <button onclick="setMode(1)" id="btnState" class="button-on">Colors Fade</button>
+          <button onclick="setMode(2)" id="btnState" class="button-on">Custom Color</button>
+        </p>
+      </div>
+
+      <!-- RGB sliders -->
+      <div class="card">
+        <p class="card-title"></i>RGB Sliders</p>
+        <p><label>Red: </label><input type='range' min='0' max='255' onchange='setRGB()' id='red'
             value='" + String(redValue) + "'></p>
-        <p><label>Green:</label><input type='range' min='0' max='255' onchange='setRGB()' id='green'
+        <p><label>Green: </label><input type='range' min='0' max='255' onchange='setRGB()' id='green'
             value='" + String(greenValue) + "'></p>
-        <p><label>Blue:</label><input type='range' min='0' max='255' onchange='setRGB()' id='blue'
+        <p><label>Blue: </label><input type='range' min='0' max='255' onchange='setRGB()' id='blue'
             value='" + String(blueValue) + "'></p>
       </div>
-      <div class="card">
-        <button id="sendBtn" class="button-on">SEND</button>
-        <p>state: <span id="state">%STATE%</span></p>
-        <p>WebSocket Info 1: <label id="WSinfo1"></label></p>
-        <p>WebSocket Info 2: <label id="WSinfo2"></label></p>
-        <p>WebSocket Info 3: <label id="WSinfo3"></label></p>
-      </div>
+      <p></p>
+      <p></p>
+    </div>
+
+    <!-- DEBUG -->
+    <div class="card-debug">
+      <p class="card-title"></i>Debug</p>
+      <p>state: <label id="debug1"></label> </p>
+      <p>mode: <label id="debug2"></label> </p>
+      <p>brightnessValue: <label id="debug3"></label> </p>
+      <p>speedValue: <label id="debug4"></label> </p>
+      <p>redValue: <label id="debug5"></label> </p>
+      <p>greenValue: <label id="debug6"></label> </p>
+      <p>blueValue: <label id="debug7"></label> </p>
     </div>
   </div>
   <script src="index.js"></script>
