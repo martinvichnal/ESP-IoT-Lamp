@@ -37,36 +37,40 @@
       <div class="card">
         <p class="card-title"></i>Mode</p>
         <p>
-          <button onclick="setMode(0)" id="btnState" class="button-on">Rainbow</button>
-          <button onclick="setMode(1)" id="btnState" class="button-on">Colors Fade</button>
-          <button onclick="setMode(2)" id="btnState" class="button-on">Custom Color</button>
+          <button onclick="setMode(0)" id="btnMode0" class="button-on">Rainbow</button>
+          <button onclick="setMode(1)" id="btnMode1" class="button-on">Colors Fade</button>
+          <button onclick="setMode(2)" id="btnMode2" class="button-on">Custom Color</button>
         </p>
       </div>
 
       <!-- RGB sliders -->
       <div class="card">
         <p class="card-title"></i>RGB Sliders</p>
-        <p><label>Red: </label><input type='range' min='0' max='255' onchange='setRGB()' id='red'
+        <p><label>RGB: </label><input type='range' min='0' max='255' onchange='setRGB()' id='rgb'
+          value='" + String(rgbValue) + "'></p>
+        <p>Set: <label id="debug5"></label> </p>
+        <!-- <p><label>Red: </label><input type='range' min='0' max='255' onchange='setRGB()' id='red'
             value='" + String(redValue) + "'></p>
         <p><label>Green: </label><input type='range' min='0' max='255' onchange='setRGB()' id='green'
             value='" + String(greenValue) + "'></p>
         <p><label>Blue: </label><input type='range' min='0' max='255' onchange='setRGB()' id='blue'
-            value='" + String(blueValue) + "'></p>
+            value='" + String(blueValue) + "'></p> -->
       </div>
-      <p></p>
-      <p></p>
     </div>
 
     <!-- DEBUG -->
     <div class="card-debug">
       <p class="card-title"></i>Debug</p>
+      <p id="sentOrReceived"></p>
+      <p id="connectedOrNot"></p>
       <p>state: <label id="debug1"></label> </p>
       <p>mode: <label id="debug2"></label> </p>
       <p>brightnessValue: <label id="debug3"></label> </p>
       <p>speedValue: <label id="debug4"></label> </p>
-      <p>redValue: <label id="debug5"></label> </p>
+      <p>rgbValue: <label id="debug5"></label> </p>
+      <!-- <p>redValue: <label id="debug5"></label> </p>
       <p>greenValue: <label id="debug6"></label> </p>
-      <p>blueValue: <label id="debug7"></label> </p>
+      <p>blueValue: <label id="debug7"></label> </p> -->
     </div>
   </div>
   <script src="index.js"></script>

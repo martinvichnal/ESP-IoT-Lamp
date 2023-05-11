@@ -45,7 +45,7 @@ body {
 .card-debug {
   background-color: rgb(80, 80, 80);
   box-shadow: 1px 1px 12px 1px rgb(30, 0, 99);
-  opacity: 0.2;
+  opacity: 0.5;
 }
 
 .card {
