@@ -152,9 +152,6 @@ void loop()
     RainbowDelayTime = speedValue;
     ColorsFadeDelayTime = speedValue;
 
-    // Running the actualMode in source1
-    runPattern(actualMode, source1);
-
     // If the mode has changed then start running the new mode in source2 then blend the two together
     // If the blend is done (blendAmount = 255) then change the actual mode to the next one and reset everything
     // scene1 is always the current mode effects
@@ -162,30 +159,42 @@ void loop()
     if (ModeChanged == true)
     {
       // Run the new mode in source2
+      runPattern(actualMode, source1);
       runPattern(newMode, source2);
 
-      blend(source2, source1, leds, NUM_LEDS, blendAmount);
-
       // Increment blend amount until 255 (which is the max and the led is driven with source2)
-      if (blendAmount < 255)
+      if (blendAmount > 255)
       {
-        // blendAmount = (blendAmount + 2) * 1.2;
-        blendAmount++;
+        blendAmount = 255;
       }
-      else
+      else if (blendAmount == 255)
       {
+        // Giving the actial mode the new mode
         actualMode = newMode;
-
         ModeChanged = false;
+      }
+
+      blend(source1, source2, leds, NUM_LEDS, blendAmount);
+
+      blendAmount++;
+
+      if (ModeChanged == false)
+      {
         blendAmount = 0;
       }
-      // Serial.print("actualMode: ");
-      // Serial.println(actualMode);
-      // Serial.print("blendAmount: ");
-      // Serial.println(blendAmount);
-      // Serial.print("ModeChanged: ");
-      // Serial.println(ModeChanged);
-      // Serial.println();
+
+      Serial.print("actualMode: ");
+      Serial.println(actualMode);
+      Serial.print("blendAmount: ");
+      Serial.println(blendAmount);
+      Serial.print("ModeChanged: ");
+      Serial.println(ModeChanged);
+      Serial.println();
+    }
+    else
+    {
+      // Running the actualMode in leds
+      runPattern(actualMode, leds);
     }
   }
   else
@@ -422,6 +431,7 @@ void runPattern(uint8_t modeActive, CRGB *LEDArray)
     {
       previousMillis = millis();
       Rainbow(LEDArray);
+      // Serial.println("Rainbow()");
     }
     // fill_solid(LEDArray, NUM_LEDS, CRGB(255, 0, 0));
     break;
@@ -432,7 +442,8 @@ void runPattern(uint8_t modeActive, CRGB *LEDArray)
     if (millis() - previousMillis >= ColorsFadeDelayTime)
     {
       previousMillis = millis();
-      ColorsFade(LEDArray);  
+      ColorsFade(LEDArray);
+      // Serial.println("ColorsFade()");
     }
     // fill_solid(LEDArray, NUM_LEDS, CRGB(0, 255, 0));
     break;
@@ -441,6 +452,7 @@ void runPattern(uint8_t modeActive, CRGB *LEDArray)
   case 2:
   {
     CustomColor(LEDArray);
+    // Serial.println("CustomColor()");
     // fill_solid(LEDArray, NUM_LEDS, CRGB(0, 0, 255));
     break;
   }
