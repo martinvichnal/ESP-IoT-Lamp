@@ -217,16 +217,14 @@ void loop()
         // Giving the actial mode the new mode
         actualMode = newMode;
         ModeChanged = false;
+        blendAmount = 0;
+      }
+      else
+      {
+        blendAmount++;
       }
 
       blend(source1, source2, leds, NUM_LEDS, blendAmount);
-
-      blendAmount++;
-
-      if (ModeChanged == false)
-      {
-        blendAmount = 0;
-      }
     }
   }
   else if ((state == false) && (stateChanged == true))
@@ -270,7 +268,7 @@ void core0Func(void *)
     //   dnsServer.processNextRequest();
     // }
 
-    // // If SSID and Pass received initWiFi() starts again and tries to connect to WiFi. 
+    // // If SSID and Pass received initWiFi() starts again and tries to connect to WiFi.
     // if ((name_received == true) && (pass_received == true))
     // {
     //   initWiFi();
