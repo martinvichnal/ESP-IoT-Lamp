@@ -15,7 +15,7 @@ flowchart TD
 
     initServer --> exitInitWifi["Exiting initWiFi()"]
 
-    initWifiManager --> startWebserverWifiManager["Starting AP servers"]
+    initWifiManager --> startWebserverWifiManager["Starting servers with AP"]
     startWebserverWifiManager --> GettingPWSSID["Waiting for PW and SSID"]
     GettingPWSSID --> SuccessPWSSID{Success ?}
     SuccessPWSSID -->|YES| Restart
