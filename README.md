@@ -2,23 +2,24 @@
  
 # Flow Charts:
 This flow chart section contains main functions for easy understanding.
-## Wifi Manager
+
+## WiFi Manager
 
 ```mermaid
 flowchart TD
-	ReadFiles --> Empty
-    Empty -->|YES| AccesPoint
-    Empty -->|NO| ConnectNetwork[Connect To Network]
-    ConnectNetwork --> Success{Success ?}
-    Success -->|YES| AccesWebPage[Accessing Web Page]
-    Success -->|NO| AccesPoint
-    AccesPoint --> WifiMan[WifiManager.html]
-    WifiMan --> SaveFile[Saveing to SPIFFS]
-    SaveFile --> Restart[Restart]
-    Restart --> ReadFiles
-	
+    initWiFi["initWiFi()"] --> TryToConnectNetwork[Trying to connect to network]
+    TryToConnectNetwork --> TryingForSec[Trying For 'tryForMs' Sec]
+    TryingForSec --> Success{Success ?}
+    Success -->|YES| initServer[Initializing WebServer and WebSocket]
+    Success -->|NO| initWifiManager["initWiFiManager()"]
 
-ReadFiles[Reading Files]
-Empty{Empty ?}
-AccesPoint[Set Acces Point]
+    initServer --> exitInitWifi["Exiting initWiFi()"]
+
+    initWifiManager --> startWebserverWifiManager["Starting AP servers"]
+    startWebserverWifiManager --> GettingPWSSID["Waiting for PW and SSID"]
+    GettingPWSSID --> SuccessPWSSID{Success ?}
+    SuccessPWSSID -->|YES| Restart
+    SuccessPWSSID -->|NO| initWifiManager["initWiFiManager()"]
+
+    Restart --> initWiFi
 ```
