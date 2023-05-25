@@ -64,6 +64,7 @@ void notifyClients();
 // Multi Core fucntions
 //*******************************//
 TaskHandle_t Core0; // will be used for wifi
+// TaskHandle_t Task1, Task2;
 void initCores();
 void core0Func(void *);
 
@@ -76,8 +77,8 @@ AsyncWebSocket ws("/ws");
 DNSServer dnsServer;
 
 // Replace with your network credentials
-const char *ssid = "";
-const char *password = "";
+const char *ssid = "UPC0130180";
+const char *password = "x8wu4ztTwepFl";
 
 String get_ssid;
 String get_pass;
@@ -85,7 +86,7 @@ bool ssid_received = false;
 bool pass_received = false;
 
 int tryCount = 0;     // if this is 120 (tryForMs / delayCount) it goes into AP mode
-int tryForMs = 10000; // Trying to connect to the internet for 1 min (60000 ms)
+int tryForMs = 30000; // Trying to connect to the internet for 1 min (60000 ms)
 int delayCount = 500;
 bool connected = false;
 
@@ -149,6 +150,7 @@ bool stateChanged = false;
 int prevBrightness = 0;
 
 unsigned long previousMillis = 0;
+unsigned long previousMillis2 = 0;
 unsigned long interval = 200;
 
 //******************************************************************************************//
@@ -173,6 +175,8 @@ void setup()
   initSPIFFS(); // Initializing SPIFFS
   initCores();
   initFastLed();
+
+  // initWiFi();
 }
 //******************************************************************************************//
 //==========================================================================================//
@@ -309,46 +313,43 @@ void initWiFi()
 
   while (WiFi.status() != WL_CONNECTED)
   {
-    Serial.print(".");
-    delay(delayCount);
-    tryCount++;
-    if ((tryCount * delayCount) >= tryForMs)
+    // Exchange for delay(delayCount)
+    if (millis() - previousMillis2 >= delayCount)
     {
-      connected = false; // ESP32 cannot connect to the wifi -> Starting Wifi Manager (AP mode)
-      break;
-    }
-    else if (WiFi.status() != WL_CONNECTED)
-    {
-      connected = true;
+      previousMillis2 = millis();
+
+      Serial.print(".");
+      tryCount++;
+      if ((tryCount * delayCount) >= tryForMs)
+      {
+        connected = false; // ESP32 cannot connect to the wifi -> Starting Wifi Manager (AP mode)
+        break;
+      }
+      else
+      {
+        connected = true;
+      }
     }
   }
-  // if (WiFi.status() != WL_CONNECTED)
-  // {
-  //   Serial.print(".");
-  //   delay(delayCount);
-  //   tryCount++;
-  //   if ((tryCount * delayCount) >= tryForMs)
-  //   {
-  //     connected = false; // ESP32 cannot connect to the wifi -> Starting Wifi Manager (AP mode)
-  //   }
-  //   else if (WiFi.status() != WL_CONNECTED)
-  //   {
-  //     connected = true;
-  //   }
-  // }
 
   if (connected)
   {
     Serial.println();
     Serial.print("WiFi connected. IP address: ");
     Serial.printf(" %s\n", WiFi.localIP().toString().c_str());
+
     initWebServer();
     initWebSocket();
   }
-  // else
-  // {
-  //   initWiFiManager();
-  // }
+  else if (!connected)
+  {
+    Serial.println();
+    Serial.println("Cannot connect to WiFi.");
+    Serial.println("Starting WiFi manager process...");
+
+    // initWiFiManager();
+  }
+  
 }
 
 //**************************************************************//
@@ -530,16 +531,16 @@ void notifyClients()
 //  - Starts ESP32 core 0 running with core0Func() task
 void initCores()
 {
-  // Initializing Core 0 for WIFI tasks
+  // Initializing Core 0 for WiFi tasks
   xTaskCreatePinnedToCore(
       core0Func, /* Task function. */
       "Core0",   /* name of task. */
-      10000,     /* Stack size of task */
+      9000,     /* Stack size of task */
       NULL,      /* parameter of the task */
       1,         /* priority of the task */
       &Core0,    /* Task handle to keep track of created task */
       0);        /* pin task to core 0 */
-  delay(500);
+  // delay(500);
 }
 
 void initFastLed()
