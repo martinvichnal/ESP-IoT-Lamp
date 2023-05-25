@@ -165,6 +165,7 @@ void setup()
 {
   Serial.begin(115200);
 
+  // Setup encode key
   // Setting up encrypted key
   // char *key = "oknclihdog";
   // cipher->setKey(key);
@@ -263,6 +264,10 @@ void core0Func(void *)
       notifyClients();
       delay(500);
     }
+    // else if (!connected)
+    // {
+    //   initWiFi();
+    // }
     // else
     // {
     //   dnsServer.processNextRequest();
@@ -317,6 +322,20 @@ void initWiFi()
       connected = true;
     }
   }
+  // if (WiFi.status() != WL_CONNECTED)
+  // {
+  //   Serial.print(".");
+  //   delay(delayCount);
+  //   tryCount++;
+  //   if ((tryCount * delayCount) >= tryForMs)
+  //   {
+  //     connected = false; // ESP32 cannot connect to the wifi -> Starting Wifi Manager (AP mode)
+  //   }
+  //   else if (WiFi.status() != WL_CONNECTED)
+  //   {
+  //     connected = true;
+  //   }
+  // }
 
   if (connected)
   {
@@ -356,7 +375,8 @@ void initWiFiManager()
       String inputMessage;
       String inputParam;
   
-      if (request->hasParam("ssid")) {
+      if (request->hasParam("ssid")) 
+      {
         inputMessage = request->getParam("ssid")->value();
         inputParam = "ssid";
         get_ssid = inputMessage;
@@ -364,7 +384,8 @@ void initWiFiManager()
         ssid_received = true;
       }
 
-      if (request->hasParam("pass")) {
+      if (request->hasParam("pass")) 
+      {
         inputMessage = request->getParam("pass")->value();
         inputParam = "pass";
         get_pass = inputMessage;
@@ -419,7 +440,6 @@ void onEvent(AsyncWebSocket *server,
              uint8_t *data,
              size_t len)
 {
-
   switch (type)
   {
   case WS_EVT_CONNECT:
@@ -504,37 +524,6 @@ void notifyClients()
   size_t len = serializeJson(json, data);
   ws.textAll(data, len);
 }
-
-// // Handler function for setting the RGB color
-// void handleSetRGB(AsyncWebServerRequest *request)
-// {
-//   // String redStr = request->getParam("red")->value();
-//   // String greenStr = request->getParam("green")->value();
-//   // String blueStr = request->getParam("blue")->value();
-//   // redValue = redStr.toInt();
-//   // greenValue = greenStr.toInt();
-//   // blueValue = blueStr.toInt();
-//   // analogWrite(RED_PIN, redValue);
-//   // analogWrite(GREEN_PIN, greenValue);
-//   // analogWrite(BLUE_PIN, blueValue);
-//   // Serial.print("Set RGB: (");
-//   // Serial.print(redValue);
-//   // Serial.print(", ");
-//   // Serial.print(greenValue);
-//   // Serial.print(", ");
-//   // Serial.print(blueValue);
-//   // Serial.println(")");
-//   // request->send(200);
-// }
-
-// void handleBtnState(AsyncWebServerRequest *request)
-// {
-//   // String btnStr = request->getParam("state")->value();
-//   // int btnState = btnStr.toInt();
-
-//   // Serial.println(btnState);
-//   // request->send(200);
-// }
 
 //**************************************************************//
 // void initCores()
@@ -711,3 +700,34 @@ void LEDs_Lighting(int brightness, int dTime)
     delay(dTime); // (1)
   }
 }
+
+// // Handler function for setting the RGB color
+// void handleSetRGB(AsyncWebServerRequest *request)
+// {
+//   // String redStr = request->getParam("red")->value();
+//   // String greenStr = request->getParam("green")->value();
+//   // String blueStr = request->getParam("blue")->value();
+//   // redValue = redStr.toInt();
+//   // greenValue = greenStr.toInt();
+//   // blueValue = blueStr.toInt();
+//   // analogWrite(RED_PIN, redValue);
+//   // analogWrite(GREEN_PIN, greenValue);
+//   // analogWrite(BLUE_PIN, blueValue);
+//   // Serial.print("Set RGB: (");
+//   // Serial.print(redValue);
+//   // Serial.print(", ");
+//   // Serial.print(greenValue);
+//   // Serial.print(", ");
+//   // Serial.print(blueValue);
+//   // Serial.println(")");
+//   // request->send(200);
+// }
+
+// void handleBtnState(AsyncWebServerRequest *request)
+// {
+//   // String btnStr = request->getParam("state")->value();
+//   // int btnState = btnStr.toInt();
+
+//   // Serial.println(btnState);
+//   // request->send(200);
+// }
