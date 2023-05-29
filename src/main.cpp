@@ -63,6 +63,7 @@ void notifyClients();
 //*******************************//
 // Multi Core fucntions
 //*******************************//
+TaskHandle_t Core1; // will be used for wifi
 // TaskHandle_t Task1, Task2;
 void initCores();
 void core1Func(void *);
