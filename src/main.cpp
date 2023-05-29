@@ -29,7 +29,7 @@ void handleRoot(AsyncWebServerRequest *request);
 void handleToggleLed(AsyncWebServerRequest *request);
 void handleSetRGB(AsyncWebServerRequest *request);
 void handleBtnState(AsyncWebServerRequest *request);
-
+void getCredentials(AsyncWebServerRequest *request);
 class CaptiveRequestHandler : public AsyncWebHandler
 {
 public:
@@ -63,10 +63,9 @@ void notifyClients();
 //*******************************//
 // Multi Core fucntions
 //*******************************//
-TaskHandle_t Core0; // will be used for wifi
 // TaskHandle_t Task1, Task2;
 void initCores();
-void core0Func(void *);
+void core1Func(void *);
 
 //*******************************//
 // WiFi
@@ -77,8 +76,8 @@ AsyncWebSocket ws("/ws");
 DNSServer dnsServer;
 
 // Replace with your network credentials
-const char *ssid = "UPC0130180";
-const char *password = "x8wu4ztTwepFl";
+const char *ssid = "";
+const char *password = "";
 
 String get_ssid;
 String get_pass;
@@ -86,7 +85,7 @@ bool ssid_received = false;
 bool pass_received = false;
 
 int tryCount = 0;     // if this is 120 (tryForMs / delayCount) it goes into AP mode
-int tryForMs = 30000; // Trying to connect to the internet for 1 min (60000 ms)
+int tryForMs = 5000; // Trying to connect to the internet for 1 min (60000 ms)
 int delayCount = 500;
 bool connected = false;
 
@@ -147,7 +146,8 @@ int newMode = 0;
 int prevState = 0;
 bool stateChanged = false;
 
-int prevBrightness = 0;
+int prevBrightness = 0;     // Used for On/Off
+int _prevBrightness = 0;    // Used for brightness change
 
 unsigned long previousMillis = 0;
 unsigned long previousMillis2 = 0;
@@ -175,8 +175,6 @@ void setup()
   initSPIFFS(); // Initializing SPIFFS
   initCores();
   initFastLed();
-
-  // initWiFi();
 }
 //******************************************************************************************//
 //==========================================================================================//
@@ -192,7 +190,31 @@ void loop()
 {
   if ((state == true) && (stateChanged == false))
   {
-    FastLED.setBrightness(brightnessValue);
+    // Smoothing brightness change
+    if (brightnessValue != _prevBrightness)
+    {
+      if (_prevBrightness > brightnessValue)
+      {
+        while (_prevBrightness != brightnessValue)
+        {
+          _prevBrightness--;
+          FastLED.setBrightness(_prevBrightness);
+          FastLED.show();
+        }
+      }
+      else if (_prevBrightness < brightnessValue)
+      {
+        while (_prevBrightness != brightnessValue)
+        {
+          _prevBrightness++;
+          FastLED.setBrightness(_prevBrightness);
+          FastLED.show();
+        }
+      }
+
+      _prevBrightness = brightnessValue;
+    }
+
     RainbowDelayTime = speedValue;
     ColorsFadeDelayTime = speedValue;
 
@@ -203,23 +225,19 @@ void loop()
     }
     else
     {
-      // If the mode has changed then start running the new mode in source2 then blend the two together
-      // If the blend is done (blendAmount = 255) then change the actual mode to the next one and reset everything
-      // scene1 is always the current mode effects
-      // scene2 is always the new mode effects
+      // * If the mode has changed then start running the new mode in source2 then blend the two together
+      // * If the blend is done (blendAmount = 255) then change the actual mode to the next one and reset everything
+      // * scene1 is always the current mode effects
+      // * scene2 is always the new mode effects
 
       // Run the new mode in source2
       runPattern(actualMode, source1);
       runPattern(newMode, source2);
 
-      // Increment blend amount until 255 (which is the max and the led is driven with source2)
-      if (blendAmount > 255)
+      blend(source1, source2, leds, NUM_LEDS, blendAmount);
+
+      if (blendAmount == 255)
       {
-        blendAmount = 255;
-      }
-      else if (blendAmount == 255)
-      {
-        // Giving the actial mode the new mode
         actualMode = newMode;
         ModeChanged = false;
         blendAmount = 0;
@@ -228,8 +246,6 @@ void loop()
       {
         blendAmount++;
       }
-
-      blend(source1, source2, leds, NUM_LEDS, blendAmount);
     }
   }
   else if ((state == false) && (stateChanged == true))
@@ -256,7 +272,7 @@ void loop()
 // / /___/ /_/ / _, _/ /___       / /___/ /_/ / /_/ / ____/         This is Core 0
 // \____/\____/_/ |_/_____/      /_____/\____/\____/_/              (Arduino using core 1)
 //==========================================================================================//
-void core0Func(void *)
+void core1Func(void *)
 {
   //  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  THIS CANT BE EMPTY BECAUSE IT CRASHES AND REBOOTS IF EMPTY   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   initWiFi();
@@ -265,16 +281,16 @@ void core0Func(void *)
     if (connected)
     {
       ws.cleanupClients();
-      notifyClients();
+      // notifyClients();
       delay(500);
+    }
+    else
+    {
+      dnsServer.processNextRequest();
     }
     // else if (!connected)
     // {
     //   initWiFi();
-    // }
-    // else
-    // {
-    //   dnsServer.processNextRequest();
     // }
 
     // // If SSID and Pass received initWiFi() starts again and tries to connect to WiFi.
@@ -347,15 +363,15 @@ void initWiFi()
     Serial.println("Cannot connect to WiFi.");
     Serial.println("Starting WiFi manager process...");
 
-    // initWiFiManager();
+    initWiFiManager();
   }
   
 }
 
 //**************************************************************//
-// void initWiFiManager()
-//  - Starts AP process and casts the wifimanager.html from
-//    SPIFFS to enter a custom SSID and Passowrd
+//* void initWiFiManager()
+//*  - Starts AP process and casts the wifimanager.html from
+//*    SPIFFS to enter a custom SSID and Passowrd
 void initWiFiManager()
 {
   Serial.println();
@@ -371,29 +387,31 @@ void initWiFiManager()
       request->send(SPIFFS, "/wifimanager.html","text/html", false); 
       Serial.println("Client Connected"); });
 
-  server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-      String inputMessage;
-      String inputParam;
-  
-      if (request->hasParam("ssid")) 
-      {
-        inputMessage = request->getParam("ssid")->value();
-        inputParam = "ssid";
-        get_ssid = inputMessage;
-        Serial.println(inputMessage);
-        ssid_received = true;
-      }
+  server.on("/get", HTTP_GET, getCredentials);
 
-      if (request->hasParam("pass")) 
-      {
-        inputMessage = request->getParam("pass")->value();
-        inputParam = "pass";
-        get_pass = inputMessage;
-        Serial.println(inputMessage);
-        pass_received = true;
-      }
-      request->send(200, "text/html", "The values entered by you have been successfully sent to the device <br><a href=\"/\">Return to Home Page</a>"); });
+  // server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
+  //           {
+  //     String inputMessage;
+  //     String inputParam;
+  
+  //     if (request->hasParam("ssid")) 
+  //     {
+  //       inputMessage = request->getParam("ssid")->value();
+  //       inputParam = "ssid";
+  //       get_ssid = inputMessage;
+  //       Serial.println(inputMessage);
+  //       ssid_received = true;
+  //     }
+
+  //     if (request->hasParam("pass")) 
+  //     {
+  //       inputMessage = request->getParam("pass")->value();
+  //       inputParam = "pass";
+  //       get_pass = inputMessage;
+  //       Serial.println(inputMessage);
+  //       pass_received = true;
+  //     }
+  //     request->send(200, "text/html", "The values entered by you have been successfully sent to the device <br><a href=\"/\">Return to Home Page</a>"); });
 
   Serial.println("Starting DNS Server");
   dnsServer.start(53, "*", WiFi.softAPIP());
@@ -403,11 +421,11 @@ void initWiFiManager()
 }
 
 //**************************************************************//
-// void initWebServer()
-//  - Starts webserver
-//    * "/" root page - index.html (from SPIFFS)
-//    * "/setRGB" requesting RGB walues from sliders - connected with handleSetRGB()
-//    * "/setBtn" requesting Button state values (0, 1, 2, 3) - connected with handleBtnState()
+//* void initWebServer()
+//*  - Starts webserver
+//*    * "/" root page - index.html (from SPIFFS)
+//*    * "/setRGB" requesting RGB walues from sliders - connected with handleSetRGB()
+//*    * "/setBtn" requesting Button state values (0, 1, 2, 3) - connected with handleBtnState()
 void initWebServer()
 {
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -421,8 +439,8 @@ void initWebServer()
 }
 
 //**************************************************************//
-// void initWebSocket()
-//  - Starts websocket
+//* void initWebSocket()
+//*  - Starts websocket
 void initWebSocket()
 {
   ws.onEvent(onEvent);
@@ -445,6 +463,7 @@ void onEvent(AsyncWebSocket *server,
   {
   case WS_EVT_CONNECT:
     Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+    notifyClients();
     break;
   case WS_EVT_DISCONNECT:
     Serial.printf("WebSocket client #%u disconnected\n", client->id());
@@ -533,13 +552,13 @@ void initCores()
 {
   // Initializing Core 0 for WiFi tasks
   xTaskCreatePinnedToCore(
-      core0Func, /* Task function. */
-      "Core0",   /* name of task. */
+      core1Func, /* Task function. */
+      "Core1",   /* name of task. */
       9000,     /* Stack size of task */
       NULL,      /* parameter of the task */
       1,         /* priority of the task */
-      &Core0,    /* Task handle to keep track of created task */
-      0);        /* pin task to core 0 */
+      &Core1,    /* Task handle to keep track of created task */
+      1);        /* pin task to core 0 */
   // delay(500);
 }
 
@@ -679,7 +698,6 @@ void LEDs_Darking(int brightness, int dTime)
 }
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
 // Lightning the leds
 // ibrightness = the current brightnessValue, idTime = delay time
 void LEDs_Lighting(int brightness, int dTime)
@@ -700,6 +718,37 @@ void LEDs_Lighting(int brightness, int dTime)
     FastLED.show();
     delay(dTime); // (1)
   }
+}
+
+void getCredentials(AsyncWebServerRequest *request)
+{
+  Serial.println("Got credentials...");
+  String inputMessage;
+  String inputParam;
+
+  if (request->hasParam("ssid"))
+  {
+    inputMessage = request->getParam("ssid")->value();
+    inputParam = "ssid";
+    get_ssid = inputMessage;
+    ssid = get_ssid.c_str();;
+    Serial.println(inputMessage);
+    ssid_received = true;
+  }
+
+  if (request->hasParam("pass"))
+  {
+    inputMessage = request->getParam("pass")->value();
+    inputParam = "pass";
+    get_pass = inputMessage;
+    password = get_pass.c_str();;
+    Serial.println(inputMessage);
+    pass_received = true;
+  }
+
+  request->send(200, "text/html", "The values entered by you have been successfully sent to the device <br><a href=\"/\">Return to Home Page</a>");
+
+  initWiFi();
 }
 
 // // Handler function for setting the RGB color
