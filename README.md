@@ -27,7 +27,7 @@ The main goal was to build a Smart Lamp that you controll with your phone.
     - [Software Requirements](#software-requirements)
 - [Flow Charts](#flow-charts)
     - [WiFi Manager](#wifi-manager)
-
+- [Mentions](#mentions)
 
 ------------------------------------------------------------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ const char *password = "your PASS";
 - When the ESP has connected to your home internet it will put out a message in the serial monitor with the IP adress.
 - Copy it then paste it in your web. (Disclaimer! you need to be connected to the same internet as your ESP)
 
-*In further versions you won'y have to hard code your credentials.*
+*In further versions you won't have to hard code your credentials.*
 
 ### Basic Controls
 The lamp has 3 main effects: ***Rainbow***, ***Colors Fade*** and ***Custom Color***.
@@ -60,9 +60,9 @@ You can controll the brightness of the leds, in one mode you can controll the hu
 ## Installation
 
 ### Hardware Requirements
-- Board: ESP32 
-- Light: WS2812B, 30 LEDs in total
-- Power supply: Battery powerd by 18650 battery and MP2636 charger board
+- Board: ***ESP32***
+- Light: ***WS2812B***, 30 LEDs in total
+- Power supply: ***18650 battery*** and ***MP2636 charger board***
 
 ### Software Requirements
 - Operating System: ***ALL***
@@ -101,3 +101,11 @@ flowchart TD
 
     Restart --> initWiFi
 ```
+
+
+## Mentions
+This project would not be here without these repositories so huge thanks :)
+
+[alanswx/ESPAsyncWiFiManager](https://github.com/alanswx/ESPAsyncWiFiManager),
+[kurimawxx00/wifi-manager](https://github.com/kurimawxx00/wifi-manager),
+[me-no-dev/ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer).
