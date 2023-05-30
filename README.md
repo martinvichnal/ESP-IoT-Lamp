@@ -27,6 +27,7 @@ The main goal was to build a Smart Lamp that you controll with your phone.
     - [Software Requirements](#software-requirements)
 - [Flow Charts](#flow-charts)
     - [WiFi Manager](#wifi-manager)
+    - [Blending](#blending)
 - [Mentions](#mentions)
 
 ------------------------------------------------------------------------------------------------------------------------------
@@ -70,8 +71,17 @@ You can controll the brightness of the leds, in one mode you can controll the hu
 - Programming language: ***C++***
 - Additional dependencies or libraries:
 ```C++
-
-#include <FastLED.h>            // WS2812B LED controller library
+#include <Arduino.h>
+#include <WiFi.h>
+#include <DNSServer.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+// https://community.platformio.org/t/solved-asyncelegantota-collect2-exe-error-ld-returned-1-exit-status/28553
+#include <AsyncElegantOTA.h>
+#include <ArduinoJson.h>
+#include <FastLED.h>
+#include "FileSystem.h"
+#include "Cipher.h" // For encryption
 ```
 
 ------------------------------------------------------------------------------------------------------------------------------
@@ -102,6 +112,27 @@ flowchart TD
     Restart --> initWiFi
 ```
 
+### Blending
+Blending fucntion is just a "Nice to have" part of the code. This is blending two led sources when mode change happened.
+Little buggy at the moment. issue: #2
+```mermaid
+flowchart TD
+
+    ModeChanged{"Mode Changed ?"}
+    ModeChanged -->|NO| runPatternActualMode1["runPattern(actualMode, leds)"]
+    ModeChanged -->|YES| runPatternActualMode2["runPattern(actualMode, source1)"]
+    runPatternActualMode2 --> runPatternNewMode["runPattern(newMode, source2)"]
+    runPatternNewMode --> blend["blend(source1, source2, leds, NUM_LEDS, blendAmount)"]
+    blend --> blendIs255{"blendAmount == 255"}
+    blendIs255 -->|YES| actualModeIsTheNewMode["actualMode = newMode"]
+    actualModeIsTheNewMode --> ModeChangedisFalse["Mode Changed = false"]
+    ModeChangedisFalse --> blendAmountIs0["blendAmount = 0"]
+
+    blendIs255 -->|NO| blendAmountInc["blendAmount++"]
+```
+
+
+------------------------------------------------------------------------------------------------------------------------------
 
 ## Mentions
 This project would not be here without these repositories so huge thanks :)
