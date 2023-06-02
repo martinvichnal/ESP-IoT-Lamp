@@ -25,6 +25,7 @@ The main goal was to build a Smart Lamp that you controll with your phone.
 - [Installation](#installation)
     - [Hardware Requirements](#hardware-requirements)
     - [Software Requirements](#software-requirements)
+- [Communication](#communication)
 - [Flow Charts](#flow-charts)
     - [WiFi Manager](#wifi-manager)
     - [Blending](#blending)
@@ -85,6 +86,30 @@ You can controll the brightness of the leds, in one mode you can controll the hu
 ```
 
 ------------------------------------------------------------------------------------------------------------------------------
+
+
+## Communication
+The ESP is communicating via WebSockets and in that it is passing JSON file which is looks like this:
+```JSON
+{
+   "state":0,
+   "mode":2,
+   "brightnessValue":255,
+   "speedValue":25,
+   "rgbValue":125
+}
+```
+| Name | Value | Description |
+| ----------- | ----------- | ----------- |
+| "state" | 1/0, true/false | On/Off state |
+| "mode" | 0..2 | Mode select |
+| "brightnessValue" | 0..255 | Brightness |
+| "speedValue" | 0..100 | Speed in two modes |
+| "rgbValue" | 0..255 | Hue value in one mode |
+
+
+------------------------------------------------------------------------------------------------------------------------------
+
 
 ## Flow Charts
 
