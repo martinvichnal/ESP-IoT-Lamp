@@ -77,8 +77,8 @@ AsyncWebSocket ws("/ws");
 DNSServer dnsServer;
 
 // Replace with your network credentials
-const char *ssid = "";
-const char *password = "";
+const char *ssid = "AmplifiVZsolt";
+const char *password = "Apaguru723";
 
 String get_ssid;
 String get_pass;
