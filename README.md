@@ -1,4 +1,4 @@
-# ESP_IOT_Project
+# ESP-IoT-Lamp
 ![](https://img.shields.io/github/v/release/martinvichnal/ESP_IOT_Project)
 ![](https://img.shields.io/github/last-commit/martinvichnal/ESP_IOT_Project)
 ![](https://img.shields.io/github/issues/martinvichnal/ESP_IOT_Project)
